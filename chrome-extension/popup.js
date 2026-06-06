@@ -20,14 +20,22 @@ async function loadJobData() {
   } catch {
     // Content script not ready — extract directly as a fallback.
     try {
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content/extractors.js"] });
-      const [result] = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => JobExtractors.extractAsync(),
-      });
+      const extract = async () => {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => (typeof JobExtractors !== "undefined" ? JobExtractors.extractAsync() : null),
+        });
+        return result?.result;
+      };
 
-      if (result?.result) {
-        renderJobData("content", result.result);
+      let data = await extract();
+      if (!data) {
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content/extractors.js"] });
+        data = await extract();
+      }
+
+      if (data) {
+        renderJobData("content", data);
         return;
       }
     } catch {

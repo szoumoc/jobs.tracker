@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Jobs Tracker",
+  "version": "0.6.0",
+  "description": "Extract and display job details from any page.",
+  "permissions": ["tabs", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Jobs Tracker"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/extractors.js", "ui.js", "content/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

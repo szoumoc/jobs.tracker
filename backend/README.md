@@ -40,11 +40,18 @@ go mod tidy
 
 ### 2. Run the Server
 
-Start the development server:
+#### Option A: Running with Hot Reload (Recommended)
+This uses **Air** to automatically rebuild and restart the server whenever you edit a file.
+```bash
+# Ensure air is installed, then run from backend directory
+air
+```
+
+#### Option B: Standard Go Run
 ```bash
 go run cmd/server/main.go
 ```
-The server will start listening on port `:8080` by default.
+The server will start listening on port `:5001` (or the port configured in main.go).
 
 ### 3. Build the Binary
 

@@ -1,12 +1,14 @@
 package models
 
+import "go.mongodb.org/mongo-driver/v2/bson"
+
 type Job struct {
-    ID          string `json:"id"`
-    Title       string `json:"title"`
-    Description string `json:"description"`
-    Company     string `json:"company"`
-    Location    string `json:"location"`
-    Status      string `json:"status"` // e.g., "applied", "interviewing", "offer", "rejected"
-    CreatedAt   string `json:"created_at"`
-    UpdatedAt   string `json:"updated_at"`
+	ID          bson.ObjectID `bson:"_id,omitempty"  json:"id"`
+	Title       string        `bson:"title"          json:"title"`
+	Description string        `bson:"description"    json:"description"`
+	Company     string        `bson:"company"        json:"company"`
+	Location    string        `bson:"location"       json:"location"`
+	Status      string        `bson:"status"         json:"status"` // "applied", "interviewing", "offer", "rejected"
+	CreatedAt   string        `bson:"created_at"     json:"created_at"`
+	UpdatedAt   string        `bson:"updated_at"     json:"updated_at"`
 }

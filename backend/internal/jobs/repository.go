@@ -1,4 +1,4 @@
-package repository
+package jobs
 
 import (
 	"context"

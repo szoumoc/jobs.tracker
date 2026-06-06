@@ -1,17 +1,11 @@
 package jobs
 
 import (
+	"context"
 	"errors"
-)
 
-// Job represents a job entity in the application.
-type Job struct {
-	ID          string
-	Title       string
-	Description string
-	Company     string
-	Status      string
-}
+	"job-tracker/backend/internal/models"
+)
 
 // JobService provides methods for job-related business logic.
 type JobService struct {
@@ -24,32 +18,32 @@ func NewJobService(repo JobRepository) *JobService {
 }
 
 // CreateJob creates a new job.
-func (s *JobService) CreateJob(job Job) (Job, error) {
+func (s *JobService) CreateJob(ctx context.Context, job *models.Job) error {
 	if job.Title == "" || job.Company == "" {
-		return Job{}, errors.New("job title and company are required")
+		return errors.New("job title and company are required")
 	}
-	return s.repo.Create(job)
+	return s.repo.Create(ctx, job)
 }
 
 // GetJob retrieves a job by its ID.
-func (s *JobService) GetJob(id string) (Job, error) {
-	return s.repo.GetByID(id)
+func (s *JobService) GetJob(ctx context.Context, id string) (*models.Job, error) {
+	return s.repo.GetByID(ctx, id)
 }
 
 // UpdateJob updates an existing job.
-func (s *JobService) UpdateJob(job Job) (Job, error) {
+func (s *JobService) UpdateJob(ctx context.Context, job *models.Job) error {
 	if job.ID == "" {
-		return Job{}, errors.New("job ID is required")
+		return errors.New("job ID is required")
 	}
-	return s.repo.Update(job)
+	return s.repo.Update(ctx, job)
 }
 
 // DeleteJob deletes a job by its ID.
-func (s *JobService) DeleteJob(id string) error {
-	return s.repo.Delete(id)
+func (s *JobService) DeleteJob(ctx context.Context, id string) error {
+	return s.repo.Delete(ctx, id)
 }
 
 // ListJobs retrieves all jobs.
-func (s *JobService) ListJobs() ([]Job, error) {
-	return s.repo.List()
+func (s *JobService) ListJobs(ctx context.Context) ([]*models.Job, error) {
+	return s.repo.GetAll(ctx)
 }

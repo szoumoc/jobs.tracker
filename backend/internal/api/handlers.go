@@ -1,43 +1,45 @@
 package api
 
 import (
-    "net/http"
-    "github.com/gorilla/mux"
-    "your_project/internal/jobs"
+	"net/http"
+
+	"job-tracker/backend/internal/jobs"
+
+	"github.com/gorilla/mux"
 )
 
 type Handler struct {
-    JobService jobs.JobService
+	JobService jobs.JobService
 }
 
 func NewHandler(jobService jobs.JobService) *Handler {
-    return &Handler{JobService: jobService}
+	return &Handler{JobService: jobService}
 }
 
 func (h *Handler) RegisterRoutes(r *mux.Router) {
-    r.HandleFunc("/api/jobs", h.GetJobs).Methods(http.MethodGet)
-    r.HandleFunc("/api/jobs/{id}", h.GetJobByID).Methods(http.MethodGet)
-    r.HandleFunc("/api/jobs", h.CreateJob).Methods(http.MethodPost)
-    r.HandleFunc("/api/jobs/{id}", h.UpdateJob).Methods(http.MethodPut)
-    r.HandleFunc("/api/jobs/{id}", h.DeleteJob).Methods(http.MethodDelete)
+	r.HandleFunc("/api/jobs", h.GetJobs).Methods(http.MethodGet)
+	r.HandleFunc("/api/jobs/{id}", h.GetJobByID).Methods(http.MethodGet)
+	r.HandleFunc("/api/jobs", h.CreateJob).Methods(http.MethodPost)
+	r.HandleFunc("/api/jobs/{id}", h.UpdateJob).Methods(http.MethodPut)
+	r.HandleFunc("/api/jobs/{id}", h.DeleteJob).Methods(http.MethodDelete)
 }
 
 func (h *Handler) GetJobs(w http.ResponseWriter, r *http.Request) {
-    // Implementation for fetching jobs
+	// Implementation for fetching jobs
 }
 
 func (h *Handler) GetJobByID(w http.ResponseWriter, r *http.Request) {
-    // Implementation for fetching a job by ID
+	// Implementation for fetching a job by ID
 }
 
 func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
-    // Implementation for creating a new job
+	// Implementation for creating a new job
 }
 
 func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
-    // Implementation for updating a job
+	// Implementation for updating a job
 }
 
 func (h *Handler) DeleteJob(w http.ResponseWriter, r *http.Request) {
-    // Implementation for deleting a job
+	// Implementation for deleting a job
 }

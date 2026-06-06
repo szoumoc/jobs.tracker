@@ -1,7 +1,10 @@
 // Extracts job details from the current page.
 // Tries, in order: Oracle API → JSON-LD/meta/DOM → short retry for slow SPAs.
+// Guarded so popup fallback injection does not redeclare after content script load.
 
-const JobExtractors = {
+var JobExtractors = globalThis.__jobsTrackerJobExtractors;
+if (!JobExtractors) {
+  JobExtractors = {
   // --- small helpers ---
 
   queryText(selectors) {
@@ -28,9 +31,180 @@ const JobExtractors = {
     return siteName.replace(/\s+(career site|careers?|jobs?)$/i, "").trim() || siteName;
   },
 
+  companyFromJobsHost() {
+    const match = location.hostname.match(/^jobs\.([^.]+)\./i);
+    if (!match) return "";
+    return match[1].replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  },
+
+  parseOgTitle(ogTitle) {
+    const appleMatch = ogTitle.match(/^(.+?)\s+-\s+Jobs\s+-\s+Careers at (.+)$/i);
+    if (appleMatch) {
+      return { jobTitle: appleMatch[1].trim(), companyName: appleMatch[2].trim() };
+    }
+    return { jobTitle: ogTitle, companyName: "" };
+  },
+
   // A page counts as a job if these three required fields are present.
   isValidJob(data) {
     return Boolean(data?.companyName && data?.jobTitle && data?.location);
+  },
+
+  // --- Apple career sites (jobs.apple.com) ---
+
+  getAppleContext() {
+    if (location.hostname !== "jobs.apple.com") return null;
+
+    const jobId = location.pathname.match(/\/details\/(\d+)/i)?.[1];
+    if (!jobId) return null;
+
+    return { jobId };
+  },
+
+  mapAppleJob(job) {
+    const locations = (job.locations || job.localeLocation || [])
+      .map((loc) => loc?.name || loc?.city || loc?.countryName)
+      .filter(Boolean);
+
+    return {
+      companyName: "Apple",
+      jobTitle: job.postingTitle || "",
+      location: [...new Set(locations)].join(", "),
+      salary: "",
+      employmentType: job.jobType || job.commitment || "",
+      applicationUrl: location.href,
+      sourcePlatform: "Apple",
+    };
+  },
+
+  extractFromAppleHydration() {
+    const job = window.__staticRouterHydrationData?.loaderData?.jobDetails?.jobsData;
+    if (!job) return null;
+
+    const mapped = this.mapAppleJob(job);
+    return this.isValidJob(mapped) ? mapped : null;
+  },
+
+  async fetchAppleJob(ctx) {
+    const response = await fetch(`${location.origin}/api/v1/jobDetails/${ctx.jobId}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+
+    const job = (await response.json())?.res;
+    if (!job) return null;
+
+    return this.mapAppleJob(job);
+  },
+
+  async tryAppleApi() {
+    const ctx = this.getAppleContext();
+    if (!ctx) return null;
+
+    const hydrated = this.extractFromAppleHydration();
+    if (this.isValidJob(hydrated)) return hydrated;
+
+    try {
+      const job = await this.fetchAppleJob(ctx);
+      return this.isValidJob(job) ? job : null;
+    } catch {
+      return null;
+    }
+  },
+
+  // --- MokaHR career sites (e.g. hire-r1.mokahr.com, app.mokahr.com) ---
+
+  getMokaContext() {
+    if (!/\.mokahr\.com$/i.test(location.hostname)) return null;
+
+    const jobId = location.hash.match(/\/job\/([0-9a-f-]+)/i)?.[1];
+    if (!jobId) return null;
+
+    const pathMatch = location.pathname.match(/\/(social|campus)-recruitment\/([^/]+)\/(\d+)/i);
+    if (!pathMatch) return null;
+
+    return {
+      site: pathMatch[1].toLowerCase() === "campus" ? "campus" : "social",
+      orgId: pathMatch[2],
+      siteId: pathMatch[3],
+      jobId,
+    };
+  },
+
+  companyFromMokaOrg(orgId) {
+    return orgId.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  },
+
+  locationFromMokaJob(job) {
+    for (const field of Object.values(job.customFields || {})) {
+      if (/location/i.test(field?.name || "")) return field.value?.trim() || "";
+    }
+    return job.department?.name?.trim() || "";
+  },
+
+  salaryFromMokaJob(job) {
+    for (const field of Object.values(job.customFields || {})) {
+      if (/salary|compensation|pay/i.test(field?.name || "")) return field.value?.trim() || "";
+    }
+    return "";
+  },
+
+  mapMokaJob(job, ctx) {
+    return {
+      companyName: this.companyFromMokaOrg(ctx.orgId),
+      jobTitle: job.title || "",
+      location: this.locationFromMokaJob(job),
+      salary: this.salaryFromMokaJob(job),
+      employmentType: job.commitment || "",
+      applicationUrl: location.href,
+      sourcePlatform: "Mokahr",
+    };
+  },
+
+  async fetchMokaJob(ctx) {
+    const limit = 50;
+    let offset = 0;
+    let total = Infinity;
+
+    while (offset < total) {
+      const response = await fetch(`${location.origin}/api/outer/ats-apply/website/jobs/v2`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId: ctx.orgId,
+          siteId: ctx.siteId,
+          limit,
+          offset,
+          needStat: offset === 0,
+          site: ctx.site,
+        }),
+      });
+      if (!response.ok) return null;
+
+      const json = await response.json();
+      if (json.code !== 0) return null;
+
+      total = json.data?.jobStats?.total ?? total;
+      const job = json.data?.jobs?.find((entry) => entry.id === ctx.jobId);
+      if (job) return this.mapMokaJob(job, ctx);
+
+      offset += limit;
+      if (!json.data?.jobs?.length) break;
+    }
+
+    return null;
+  },
+
+  async tryMokaApi() {
+    const ctx = this.getMokaContext();
+    if (!ctx) return null;
+
+    try {
+      const job = await this.fetchMokaJob(ctx);
+      return this.isValidJob(job) ? job : null;
+    } catch {
+      return null;
+    }
   },
 
   // --- Oracle career sites (e.g. jobs.akamai.com) ---
@@ -133,15 +307,18 @@ const JobExtractors = {
     const posting = this.getJsonLdPosting();
     const org = posting?.hiringOrganization;
     const companyFromJson = typeof org === "string" ? org : org?.name || org?.legalName || "";
+    const ogParsed = this.parseOgTitle(this.meta("og:title"));
 
     const data = {
       companyName:
         companyFromJson ||
+        ogParsed.companyName ||
         this.companyFromMeta() ||
+        this.companyFromJobsHost() ||
         this.queryText([".company-name", "[data-automation-id='companyName']", "[itemprop='name']"]),
       jobTitle:
         posting?.title ||
-        this.meta("og:title") ||
+        ogParsed.jobTitle ||
         this.queryText(["h1", "h2.posting-headline", ".job-title", "[itemprop='title']"]),
       location:
         this.locationFromPosting(posting) ||
@@ -173,6 +350,20 @@ const JobExtractors = {
         // keep retrying
       }
 
+      try {
+        const mokaJob = await this.tryMokaApi();
+        if (this.isValidJob(mokaJob)) return mokaJob;
+      } catch {
+        // keep retrying
+      }
+
+      try {
+        const appleJob = await this.tryAppleApi();
+        if (this.isValidJob(appleJob)) return appleJob;
+      } catch {
+        // keep retrying
+      }
+
       const job = this.extractFromPage();
       if (job) return job;
     }
@@ -188,9 +379,25 @@ const JobExtractors = {
       // fall through to DOM extraction
     }
 
+    try {
+      const mokaJob = await this.tryMokaApi();
+      if (this.isValidJob(mokaJob)) return mokaJob;
+    } catch {
+      // fall through to DOM extraction
+    }
+
+    try {
+      const appleJob = await this.tryAppleApi();
+      if (this.isValidJob(appleJob)) return appleJob;
+    } catch {
+      // fall through to DOM extraction
+    }
+
     const immediate = this.extractFromPage();
     if (immediate) return immediate;
 
     return this.retryExtract(8, 500);
   },
 };
+  globalThis.__jobsTrackerJobExtractors = JobExtractors;
+}

@@ -22,7 +22,7 @@ func LoadConfig() (*Config, error) {
 	return &Config{
 		Port:        getEnv("PORT", "8080"),
 		MongoURI:    getEnv("MONGODB_URI", "mongodb://localhost:27017"),
-		MongoDBName: getEnv("MONGODB_DB", "jobtracker"),
+		MongoDBName: getEnv("MONGODB_DB", "job-tracker"),
 	}, nil
 }
 

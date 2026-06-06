@@ -1,94 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jobs Tracker</title>
-    <style>
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
 
-      body {
-        width: 360px;
-        max-height: 520px;
-        overflow-y: auto;
-        font-family: system-ui, -apple-system, sans-serif;
-        font-size: 14px;
-        color: #1a1a1a;
-        background: #fff;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jobs Tracker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-      header {
-        padding: 16px;
-        border-bottom: 1px solid #e5e5e5;
-      }
+    body {
+      width: 360px;
+      max-height: 520px;
+      overflow-y: auto;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      color: #1a1a1a;
+      background: #fff;
+    }
 
-      header h1 {
-        font-size: 16px;
-        font-weight: 600;
-      }
+    header {
+      padding: 16px;
+      border-bottom: 1px solid #e5e5e5;
+    }
 
-      main {
-        padding: 16px;
-      }
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
 
-      .field {
-        margin-bottom: 12px;
-      }
+    main {
+      padding: 16px;
+    }
 
-      .field:last-child {
-        margin-bottom: 0;
-      }
+    .field {
+      margin-bottom: 12px;
+    }
 
-      .field label {
-        display: block;
-        margin-bottom: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: #888;
-      }
+    .field:last-child {
+      margin-bottom: 0;
+    }
 
-      .field p {
-        line-height: 1.4;
-        word-break: break-word;
-        max-height: 100px;
-        overflow-y: auto;
-      }
+    .field label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #888;
+    }
 
-      .field p.empty {
-        color: #aaa;
-        font-style: italic;
-      }
+    .field p {
+      line-height: 1.4;
+      word-break: break-word;
+      max-height: 100px;
+      overflow-y: auto;
+    }
 
-      .field p.link {
-        color: #155eef;
-        font-size: 12px;
-      }
+    .field p.empty {
+      color: #aaa;
+      font-style: italic;
+    }
 
-      .status {
-        color: #666;
-        font-size: 13px;
-        line-height: 1.5;
-      }
+    .field p.link {
+      color: #155eef;
+      font-size: 12px;
+    }
 
-      .status.error {
-        color: #b42318;
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1>Jobs Tracker</h1>
-    </header>
-    <main id="content">
-      <p class="status">Loading job details…</p>
-    </main>
-    <script src="ui.js"></script>
-    <script src="popup.js"></script>
-  </body>
+    .status {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .status.error {
+      color: #b42318;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Jobs Tracker</h1>
+  </header>
+  <main id="content">
+    <p class="status">Loading job details…</p>
+  </main>
+  <script src="ui.js"></script>
+  <script src="popup.js"></script>
+</body>
+
 </html>

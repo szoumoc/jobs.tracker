@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 
 	"job-tracker/backend/internal/api"
 	"job-tracker/backend/internal/config"
@@ -23,21 +24,30 @@ func main() {
 		log.Fatal("failed to load config:", err)
 	}
 
-	// Connect to MongoDB
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	// Atlas-recommended: use Stable API v1
+	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+	opts := options.Client().
+		ApplyURI(cfg.MongoURI).
+		SetServerAPIOptions(serverAPI)
 
-	client, err := mongo.Connect(options.Client().ApplyURI(cfg.MongoURI))
+	// Connect to MongoDB Atlas
+	client, err := mongo.Connect(opts)
 	if err != nil {
 		log.Fatal("failed to connect to MongoDB:", err)
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		if err := client.Disconnect(context.TODO()); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	// Ping to verify connection
-	if err := client.Ping(ctx, nil); err != nil {
+	// Ping to confirm connection
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		log.Fatal("MongoDB ping failed:", err)
 	}
-	log.Println("Connected to MongoDB")
+	log.Println("Connected to MongoDB Atlas!")
 
 	// Layer 1: Repository — data access via MongoDB
 	col := client.Database(cfg.MongoDBName).Collection("jobs")
@@ -50,11 +60,10 @@ func main() {
 	r := mux.NewRouter()
 	h := api.NewHandler(svc)
 	h.RegisterRoutes(r)
-	http.Handle("/", r)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("Starting server on %s", addr)
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatal(err)
 	}
 }

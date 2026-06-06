@@ -44,11 +44,26 @@ func (h *Handler) GetJobs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetJobByID(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement
+	id := mux.Vars(r)["id"]
+	job, err := h.svc.GetJob(r.Context(), id)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, job)
 }
 
 func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement
+	var job models.Job
+	if err := json.NewDecoder(r.Body).Decode(&job); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if err := h.svc.CreateJob(r.Context(), &job); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusCreated, job)
 }
 
 func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {

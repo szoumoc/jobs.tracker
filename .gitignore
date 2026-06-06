@@ -2,3 +2,4 @@
 server
 tmp
 backend/tmp
+backend/.env
